@@ -3,7 +3,7 @@ use crate::p2::bindings::sockets::network::{
     Ipv6SocketAddress,
 };
 use crate::p2::network::{from_ipv4_addr, from_ipv6_addr, to_ipv4_addr, to_ipv6_addr};
-use crate::p2::{IoView, SocketError, WasiImpl, WasiView};
+use crate::p2::{IoView, SocketError, WasiImpl, WasiView, LogLevel};
 use anyhow::Error;
 use rustix::io::Errno;
 use std::io;
@@ -18,6 +18,7 @@ where
     }
 
     fn network_error_code(&mut self, err: Resource<Error>) -> anyhow::Result<Option<ErrorCode>> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling network (network_error_code) function.".into());
         let err = self.table().get(&err)?;
 
         if let Some(err) = err.downcast_ref::<std::io::Error>() {
@@ -33,6 +34,7 @@ where
     T: WasiView,
 {
     fn drop(&mut self, this: Resource<network::Network>) -> Result<(), anyhow::Error> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling network sockets (drop) function.".into());
         let table = self.table();
 
         table.delete(this)?;

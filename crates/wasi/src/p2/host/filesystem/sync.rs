@@ -1,7 +1,7 @@
 use crate::p2::bindings::filesystem::types as async_filesystem;
 use crate::p2::bindings::sync::filesystem::types as sync_filesystem;
 use crate::p2::bindings::sync::io::streams;
-use crate::p2::{FsError, FsResult, WasiImpl, WasiView};
+use crate::p2::{FsError, FsResult, WasiImpl, WasiView, LogLevel};
 use crate::runtime::in_tokio;
 use wasmtime::component::Resource;
 
@@ -32,12 +32,14 @@ where
         len: sync_filesystem::Filesize,
         advice: sync_filesystem::Advice,
     ) -> FsResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (advise) function.".into());
         in_tokio(async {
             async_filesystem::HostDescriptor::advise(self, fd, offset, len, advice.into()).await
         })
     }
 
     fn sync_data(&mut self, fd: Resource<sync_filesystem::Descriptor>) -> FsResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (sync_data) function.".into());
         in_tokio(async { async_filesystem::HostDescriptor::sync_data(self, fd).await })
     }
 
@@ -45,6 +47,7 @@ where
         &mut self,
         fd: Resource<sync_filesystem::Descriptor>,
     ) -> FsResult<sync_filesystem::DescriptorFlags> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (get_flags) function.".into());
         Ok(in_tokio(async { async_filesystem::HostDescriptor::get_flags(self, fd).await })?.into())
     }
 
@@ -52,6 +55,7 @@ where
         &mut self,
         fd: Resource<sync_filesystem::Descriptor>,
     ) -> FsResult<sync_filesystem::DescriptorType> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (get_type) function.".into());
         Ok(in_tokio(async { async_filesystem::HostDescriptor::get_type(self, fd).await })?.into())
     }
 
@@ -60,6 +64,7 @@ where
         fd: Resource<sync_filesystem::Descriptor>,
         size: sync_filesystem::Filesize,
     ) -> FsResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (set_size) function.".into());
         in_tokio(async { async_filesystem::HostDescriptor::set_size(self, fd, size).await })
     }
 
@@ -69,6 +74,7 @@ where
         atim: sync_filesystem::NewTimestamp,
         mtim: sync_filesystem::NewTimestamp,
     ) -> FsResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (set_times) function.".into());
         in_tokio(async {
             async_filesystem::HostDescriptor::set_times(self, fd, atim.into(), mtim.into()).await
         })
@@ -80,6 +86,7 @@ where
         len: sync_filesystem::Filesize,
         offset: sync_filesystem::Filesize,
     ) -> FsResult<(Vec<u8>, bool)> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (read) function.".into());
         in_tokio(async { async_filesystem::HostDescriptor::read(self, fd, len, offset).await })
     }
 
@@ -89,6 +96,7 @@ where
         buf: Vec<u8>,
         offset: sync_filesystem::Filesize,
     ) -> FsResult<sync_filesystem::Filesize> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (write) function.".into());
         in_tokio(async { async_filesystem::HostDescriptor::write(self, fd, buf, offset).await })
     }
 
@@ -96,10 +104,12 @@ where
         &mut self,
         fd: Resource<sync_filesystem::Descriptor>,
     ) -> FsResult<Resource<sync_filesystem::DirectoryEntryStream>> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (read_directory) function.".into());
         in_tokio(async { async_filesystem::HostDescriptor::read_directory(self, fd).await })
     }
 
     fn sync(&mut self, fd: Resource<sync_filesystem::Descriptor>) -> FsResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (sync) function.".into());
         in_tokio(async { async_filesystem::HostDescriptor::sync(self, fd).await })
     }
 
@@ -108,6 +118,7 @@ where
         fd: Resource<sync_filesystem::Descriptor>,
         path: String,
     ) -> FsResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (create_directory_at) function.".into());
         in_tokio(async {
             async_filesystem::HostDescriptor::create_directory_at(self, fd, path).await
         })
@@ -117,6 +128,7 @@ where
         &mut self,
         fd: Resource<sync_filesystem::Descriptor>,
     ) -> FsResult<sync_filesystem::DescriptorStat> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (stat) function.".into());
         Ok(in_tokio(async { async_filesystem::HostDescriptor::stat(self, fd).await })?.into())
     }
 
@@ -126,6 +138,7 @@ where
         path_flags: sync_filesystem::PathFlags,
         path: String,
     ) -> FsResult<sync_filesystem::DescriptorStat> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (stat_at) function.".into());
         Ok(in_tokio(async {
             async_filesystem::HostDescriptor::stat_at(self, fd, path_flags.into(), path).await
         })?
@@ -140,6 +153,7 @@ where
         atim: sync_filesystem::NewTimestamp,
         mtim: sync_filesystem::NewTimestamp,
     ) -> FsResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (set_times_at) function.".into());
         in_tokio(async {
             async_filesystem::HostDescriptor::set_times_at(
                 self,
@@ -162,6 +176,7 @@ where
         new_descriptor: Resource<sync_filesystem::Descriptor>,
         new_path: String,
     ) -> FsResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (link_at) function.".into());
         in_tokio(async {
             async_filesystem::HostDescriptor::link_at(
                 self,
@@ -183,6 +198,7 @@ where
         oflags: sync_filesystem::OpenFlags,
         flags: sync_filesystem::DescriptorFlags,
     ) -> FsResult<Resource<sync_filesystem::Descriptor>> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (open_at) function.".into());
         in_tokio(async {
             async_filesystem::HostDescriptor::open_at(
                 self,
@@ -197,6 +213,7 @@ where
     }
 
     fn drop(&mut self, fd: Resource<sync_filesystem::Descriptor>) -> anyhow::Result<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (drop) function.".into());
         async_filesystem::HostDescriptor::drop(self, fd)
     }
 
@@ -205,6 +222,7 @@ where
         fd: Resource<sync_filesystem::Descriptor>,
         path: String,
     ) -> FsResult<String> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (readlink_at) function.".into());
         in_tokio(async { async_filesystem::HostDescriptor::readlink_at(self, fd, path).await })
     }
 
@@ -213,6 +231,7 @@ where
         fd: Resource<sync_filesystem::Descriptor>,
         path: String,
     ) -> FsResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (remove_directory_at) function.".into());
         in_tokio(async {
             async_filesystem::HostDescriptor::remove_directory_at(self, fd, path).await
         })
@@ -225,6 +244,7 @@ where
         new_fd: Resource<sync_filesystem::Descriptor>,
         new_path: String,
     ) -> FsResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (rename_at) function.".into());
         in_tokio(async {
             async_filesystem::HostDescriptor::rename_at(self, fd, old_path, new_fd, new_path).await
         })
@@ -236,6 +256,7 @@ where
         src_path: String,
         dest_path: String,
     ) -> FsResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (symlink_at) function.".into());
         in_tokio(async {
             async_filesystem::HostDescriptor::symlink_at(self, fd, src_path, dest_path).await
         })
@@ -246,6 +267,7 @@ where
         fd: Resource<sync_filesystem::Descriptor>,
         path: String,
     ) -> FsResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (unlink_file_at) function.".into());
         in_tokio(async { async_filesystem::HostDescriptor::unlink_file_at(self, fd, path).await })
     }
 
@@ -254,6 +276,7 @@ where
         fd: Resource<sync_filesystem::Descriptor>,
         offset: sync_filesystem::Filesize,
     ) -> FsResult<Resource<streams::InputStream>> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (read_via_stream) function.".into());
         Ok(async_filesystem::HostDescriptor::read_via_stream(
             self, fd, offset,
         )?)
@@ -264,6 +287,7 @@ where
         fd: Resource<sync_filesystem::Descriptor>,
         offset: sync_filesystem::Filesize,
     ) -> FsResult<Resource<streams::OutputStream>> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (write_via_stream) function.".into());
         Ok(async_filesystem::HostDescriptor::write_via_stream(
             self, fd, offset,
         )?)
@@ -273,6 +297,7 @@ where
         &mut self,
         fd: Resource<sync_filesystem::Descriptor>,
     ) -> FsResult<Resource<streams::OutputStream>> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (append_via_stream) function.".into());
         Ok(async_filesystem::HostDescriptor::append_via_stream(
             self, fd,
         )?)
@@ -283,12 +308,14 @@ where
         a: Resource<sync_filesystem::Descriptor>,
         b: Resource<sync_filesystem::Descriptor>,
     ) -> anyhow::Result<bool> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (is_same_object) function.".into());
         in_tokio(async { async_filesystem::HostDescriptor::is_same_object(self, a, b).await })
     }
     fn metadata_hash(
         &mut self,
         fd: Resource<sync_filesystem::Descriptor>,
     ) -> FsResult<sync_filesystem::MetadataHashValue> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (metadata_hash) function.".into());
         Ok(
             in_tokio(async { async_filesystem::HostDescriptor::metadata_hash(self, fd).await })?
                 .into(),
@@ -300,6 +327,7 @@ where
         path_flags: sync_filesystem::PathFlags,
         path: String,
     ) -> FsResult<sync_filesystem::MetadataHashValue> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (metadata_hash_at) function.".into());
         Ok(in_tokio(async {
             async_filesystem::HostDescriptor::metadata_hash_at(self, fd, path_flags.into(), path)
                 .await
@@ -316,6 +344,7 @@ where
         &mut self,
         stream: Resource<sync_filesystem::DirectoryEntryStream>,
     ) -> FsResult<Option<sync_filesystem::DirectoryEntry>> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (read_directory_entry) function.".into());
         Ok(in_tokio(async {
             async_filesystem::HostDirectoryEntryStream::read_directory_entry(self, stream).await
         })?
@@ -326,6 +355,7 @@ where
         &mut self,
         stream: Resource<sync_filesystem::DirectoryEntryStream>,
     ) -> anyhow::Result<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling sync filesystem (drop) function.".into());
         async_filesystem::HostDirectoryEntryStream::drop(self, stream)
     }
 }

@@ -230,6 +230,7 @@ use wasmtime::component::{HasData, Linker};
 
 pub mod bindings;
 mod ctx;
+mod logger;
 pub(crate) mod filesystem;
 mod host;
 mod ip_name_lookup;
@@ -243,6 +244,7 @@ mod view;
 mod write_stream;
 
 pub use self::ctx::{WasiCtx, WasiCtxBuilder};
+pub use self::logger::{Logger, LogLevel};
 pub use self::filesystem::{FsError, FsResult};
 pub use self::network::{SocketError, SocketResult};
 pub use self::stdio::{

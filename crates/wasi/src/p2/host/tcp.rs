@@ -3,7 +3,7 @@ use crate::p2::bindings::{
     sockets::network::{IpAddressFamily, IpSocketAddress, Network},
     sockets::tcp::{self, ShutdownType},
 };
-use crate::p2::{SocketResult, WasiImpl, WasiView};
+use crate::p2::{SocketResult, WasiImpl, WasiView, LogLevel};
 use std::net::SocketAddr;
 use std::time::Duration;
 use wasmtime::component::Resource;
@@ -25,6 +25,7 @@ where
         network: Resource<Network>,
         local_address: IpSocketAddress,
     ) -> SocketResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (start_bind) function.".into());
         self.ctx().allowed_network_uses.check_allowed_tcp()?;
         let table = self.table();
         let network = table.get(&network)?;
@@ -42,6 +43,7 @@ where
     }
 
     fn finish_bind(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (finish_bind) function.".into());
         let table = self.table();
         let socket = table.get_mut(&this)?;
 
@@ -54,6 +56,7 @@ where
         network: Resource<Network>,
         remote_address: IpSocketAddress,
     ) -> SocketResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (start_connect) function.".into());
         self.ctx().allowed_network_uses.check_allowed_tcp()?;
         let table = self.table();
         let network = table.get(&network)?;
@@ -74,6 +77,7 @@ where
         &mut self,
         this: Resource<tcp::TcpSocket>,
     ) -> SocketResult<(Resource<DynInputStream>, Resource<DynOutputStream>)> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (finish_connect) function.".into());
         let table = self.table();
         let socket = table.get_mut(&this)?;
 
@@ -86,6 +90,7 @@ where
     }
 
     fn start_listen(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (start_listen) function.".into());
         self.ctx().allowed_network_uses.check_allowed_tcp()?;
         let table = self.table();
         let socket = table.get_mut(&this)?;
@@ -94,6 +99,7 @@ where
     }
 
     fn finish_listen(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (finish_listen) function.".into());
         let table = self.table();
         let socket = table.get_mut(&this)?;
         socket.finish_listen()
@@ -107,6 +113,7 @@ where
         Resource<DynInputStream>,
         Resource<DynOutputStream>,
     )> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (accept) function.".into());
         self.ctx().allowed_network_uses.check_allowed_tcp()?;
         let table = self.table();
         let socket = table.get_mut(&this)?;
@@ -121,6 +128,7 @@ where
     }
 
     fn local_address(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<IpSocketAddress> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (local_address) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -128,6 +136,7 @@ where
     }
 
     fn remote_address(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<IpSocketAddress> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (remote_address) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -135,6 +144,7 @@ where
     }
 
     fn is_listening(&mut self, this: Resource<tcp::TcpSocket>) -> Result<bool, anyhow::Error> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (is_listening) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -145,6 +155,7 @@ where
         &mut self,
         this: Resource<tcp::TcpSocket>,
     ) -> Result<IpAddressFamily, anyhow::Error> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (address_family) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -159,6 +170,7 @@ where
         this: Resource<tcp::TcpSocket>,
         value: u64,
     ) -> SocketResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_listen_backlog_size) function.".into());
         let table = self.table();
         let socket = table.get_mut(&this)?;
 
@@ -169,6 +181,7 @@ where
     }
 
     fn keep_alive_enabled(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<bool> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_enabled) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
         socket.keep_alive_enabled()
@@ -179,12 +192,14 @@ where
         this: Resource<tcp::TcpSocket>,
         value: bool,
     ) -> SocketResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_enabled) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
         socket.set_keep_alive_enabled(value)
     }
 
     fn keep_alive_idle_time(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<u64> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_idle_time) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
         Ok(socket.keep_alive_idle_time()?.as_nanos() as u64)
@@ -195,6 +210,7 @@ where
         this: Resource<tcp::TcpSocket>,
         value: u64,
     ) -> SocketResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_idle_time) function.".into());
         let table = self.table();
         let socket = table.get_mut(&this)?;
         let duration = Duration::from_nanos(value);
@@ -202,6 +218,7 @@ where
     }
 
     fn keep_alive_interval(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<u64> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_interval) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
         Ok(socket.keep_alive_interval()?.as_nanos() as u64)
@@ -212,12 +229,14 @@ where
         this: Resource<tcp::TcpSocket>,
         value: u64,
     ) -> SocketResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_interval) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
         socket.set_keep_alive_interval(Duration::from_nanos(value))
     }
 
     fn keep_alive_count(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<u32> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_count) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
         socket.keep_alive_count()
@@ -228,24 +247,28 @@ where
         this: Resource<tcp::TcpSocket>,
         value: u32,
     ) -> SocketResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_count) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
         socket.set_keep_alive_count(value)
     }
 
     fn hop_limit(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<u8> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (hop_limit) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
         socket.hop_limit()
     }
 
     fn set_hop_limit(&mut self, this: Resource<tcp::TcpSocket>, value: u8) -> SocketResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_hop_limit) function.".into());
         let table = self.table();
         let socket = table.get_mut(&this)?;
         socket.set_hop_limit(value)
     }
 
     fn receive_buffer_size(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<u64> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (receive_buffer_size) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -257,6 +280,7 @@ where
         this: Resource<tcp::TcpSocket>,
         value: u64,
     ) -> SocketResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_receive_buffer_size) function.".into());
         let table = self.table();
         let socket = table.get_mut(&this)?;
         let value = value.try_into().unwrap_or(usize::MAX);
@@ -264,6 +288,7 @@ where
     }
 
     fn send_buffer_size(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<u64> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (send_buffer_size) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -275,6 +300,7 @@ where
         this: Resource<tcp::TcpSocket>,
         value: u64,
     ) -> SocketResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (send_buffer_size) function.".into());
         let table = self.table();
         let socket = table.get_mut(&this)?;
         let value = value.try_into().unwrap_or(usize::MAX);
@@ -285,6 +311,7 @@ where
         &mut self,
         this: Resource<tcp::TcpSocket>,
     ) -> anyhow::Result<Resource<DynPollable>> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (subscribe) function.".into());
         wasmtime_wasi_io::poll::subscribe(self.table(), this)
     }
 
@@ -293,6 +320,7 @@ where
         this: Resource<tcp::TcpSocket>,
         shutdown_type: ShutdownType,
     ) -> SocketResult<()> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (shutdown) function.".into());
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -305,6 +333,7 @@ where
     }
 
     fn drop(&mut self, this: Resource<tcp::TcpSocket>) -> Result<(), anyhow::Error> {
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (drop) function.".into());
         let table = self.table();
 
         // As in the filesystem implementation, we assume closing a socket
@@ -330,7 +359,7 @@ pub mod sync {
                 self, Duration, HostTcpSocket, InputStream, IpAddressFamily, IpSocketAddress,
                 OutputStream, Pollable, ShutdownType, TcpSocket,
             },
-        },
+        }, LogLevel,
     };
     use crate::runtime::in_tokio;
 
@@ -346,12 +375,14 @@ pub mod sync {
             network: Resource<Network>,
             local_address: IpSocketAddress,
         ) -> Result<(), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (start_bind) function.".into());
             in_tokio(async {
                 AsyncHostTcpSocket::start_bind(self, self_, network, local_address).await
             })
         }
 
         fn finish_bind(&mut self, self_: Resource<TcpSocket>) -> Result<(), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (finish_bind) function.".into());
             AsyncHostTcpSocket::finish_bind(self, self_)
         }
 
@@ -361,6 +392,7 @@ pub mod sync {
             network: Resource<Network>,
             remote_address: IpSocketAddress,
         ) -> Result<(), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (start_conect) function.".into());
             in_tokio(async {
                 AsyncHostTcpSocket::start_connect(self, self_, network, remote_address).await
             })
@@ -370,14 +402,17 @@ pub mod sync {
             &mut self,
             self_: Resource<TcpSocket>,
         ) -> Result<(Resource<InputStream>, Resource<OutputStream>), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (finish_connect) function.".into());
             AsyncHostTcpSocket::finish_connect(self, self_)
         }
 
         fn start_listen(&mut self, self_: Resource<TcpSocket>) -> Result<(), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (start_listen) function.".into());
             AsyncHostTcpSocket::start_listen(self, self_)
         }
 
         fn finish_listen(&mut self, self_: Resource<TcpSocket>) -> Result<(), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (finish_listen) function.".into());
             AsyncHostTcpSocket::finish_listen(self, self_)
         }
 
@@ -392,6 +427,7 @@ pub mod sync {
             ),
             SocketError,
         > {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (accept) function.".into());
             AsyncHostTcpSocket::accept(self, self_)
         }
 
@@ -399,6 +435,7 @@ pub mod sync {
             &mut self,
             self_: Resource<TcpSocket>,
         ) -> Result<IpSocketAddress, SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (local_address) function.".into());
             AsyncHostTcpSocket::local_address(self, self_)
         }
 
@@ -406,10 +443,12 @@ pub mod sync {
             &mut self,
             self_: Resource<TcpSocket>,
         ) -> Result<IpSocketAddress, SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (remote_address) function.".into());
             AsyncHostTcpSocket::remote_address(self, self_)
         }
 
         fn is_listening(&mut self, self_: Resource<TcpSocket>) -> wasmtime::Result<bool> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (is_listening) function.".into());
             AsyncHostTcpSocket::is_listening(self, self_)
         }
 
@@ -417,6 +456,7 @@ pub mod sync {
             &mut self,
             self_: Resource<TcpSocket>,
         ) -> wasmtime::Result<IpAddressFamily> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (address_family) function.".into());
             AsyncHostTcpSocket::address_family(self, self_)
         }
 
@@ -425,10 +465,12 @@ pub mod sync {
             self_: Resource<TcpSocket>,
             value: u64,
         ) -> Result<(), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_listen_backlog_size) function.".into());
             AsyncHostTcpSocket::set_listen_backlog_size(self, self_, value)
         }
 
         fn keep_alive_enabled(&mut self, self_: Resource<TcpSocket>) -> Result<bool, SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_enabled) function.".into());
             AsyncHostTcpSocket::keep_alive_enabled(self, self_)
         }
 
@@ -437,6 +479,7 @@ pub mod sync {
             self_: Resource<TcpSocket>,
             value: bool,
         ) -> Result<(), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_enabled) function.".into());
             AsyncHostTcpSocket::set_keep_alive_enabled(self, self_, value)
         }
 
@@ -444,6 +487,7 @@ pub mod sync {
             &mut self,
             self_: Resource<TcpSocket>,
         ) -> Result<Duration, SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_idle_time) function.".into());
             AsyncHostTcpSocket::keep_alive_idle_time(self, self_)
         }
 
@@ -452,6 +496,7 @@ pub mod sync {
             self_: Resource<TcpSocket>,
             value: Duration,
         ) -> Result<(), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_idle_time) function.".into());
             AsyncHostTcpSocket::set_keep_alive_idle_time(self, self_, value)
         }
 
@@ -459,6 +504,7 @@ pub mod sync {
             &mut self,
             self_: Resource<TcpSocket>,
         ) -> Result<Duration, SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_interval) function.".into());
             AsyncHostTcpSocket::keep_alive_interval(self, self_)
         }
 
@@ -467,10 +513,12 @@ pub mod sync {
             self_: Resource<TcpSocket>,
             value: Duration,
         ) -> Result<(), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_interval) function.".into());
             AsyncHostTcpSocket::set_keep_alive_interval(self, self_, value)
         }
 
         fn keep_alive_count(&mut self, self_: Resource<TcpSocket>) -> Result<u32, SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_count) function.".into());
             AsyncHostTcpSocket::keep_alive_count(self, self_)
         }
 
@@ -479,10 +527,12 @@ pub mod sync {
             self_: Resource<TcpSocket>,
             value: u32,
         ) -> Result<(), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_count) function.".into());
             AsyncHostTcpSocket::set_keep_alive_count(self, self_, value)
         }
 
         fn hop_limit(&mut self, self_: Resource<TcpSocket>) -> Result<u8, SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (hop_limit) function.".into());
             AsyncHostTcpSocket::hop_limit(self, self_)
         }
 
@@ -491,10 +541,12 @@ pub mod sync {
             self_: Resource<TcpSocket>,
             value: u8,
         ) -> Result<(), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_hop_limit) function.".into());
             AsyncHostTcpSocket::set_hop_limit(self, self_, value)
         }
 
         fn receive_buffer_size(&mut self, self_: Resource<TcpSocket>) -> Result<u64, SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (receive_buffer_size) function.".into());
             AsyncHostTcpSocket::receive_buffer_size(self, self_)
         }
 
@@ -503,10 +555,12 @@ pub mod sync {
             self_: Resource<TcpSocket>,
             value: u64,
         ) -> Result<(), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_receive_buffer_size) function.".into());
             AsyncHostTcpSocket::set_receive_buffer_size(self, self_, value)
         }
 
         fn send_buffer_size(&mut self, self_: Resource<TcpSocket>) -> Result<u64, SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (send_buffer_size) function.".into());
             AsyncHostTcpSocket::send_buffer_size(self, self_)
         }
 
@@ -515,6 +569,7 @@ pub mod sync {
             self_: Resource<TcpSocket>,
             value: u64,
         ) -> Result<(), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_send_buffer_size) function.".into());
             AsyncHostTcpSocket::set_send_buffer_size(self, self_, value)
         }
 
@@ -522,6 +577,7 @@ pub mod sync {
             &mut self,
             self_: Resource<TcpSocket>,
         ) -> wasmtime::Result<Resource<Pollable>> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (subscribe) function.".into());
             AsyncHostTcpSocket::subscribe(self, self_)
         }
 
@@ -530,10 +586,12 @@ pub mod sync {
             self_: Resource<TcpSocket>,
             shutdown_type: ShutdownType,
         ) -> Result<(), SocketError> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (shutdown) function.".into());
             AsyncHostTcpSocket::shutdown(self, self_, shutdown_type.into())
         }
 
         fn drop(&mut self, rep: Resource<TcpSocket>) -> wasmtime::Result<()> {
+            self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (drop) function.".into());
             AsyncHostTcpSocket::drop(self, rep)
         }
     }

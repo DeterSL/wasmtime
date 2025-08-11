@@ -17,6 +17,8 @@ use std::sync::Arc;
 use std::{future::Future, pin::Pin};
 use std::{mem, net::SocketAddr};
 
+use super::{Logger, logger::DummyLogger};
+
 /// Builder-style structure used to create a [`WasiCtx`].
 ///
 /// This type is used to create a [`WasiCtx`] that is considered per-[`Store`]
@@ -53,6 +55,7 @@ pub struct WasiCtxBuilder {
     allowed_network_uses: AllowedNetworkUses,
     allow_blocking_current_thread: bool,
     built: bool,
+    logger: Box<dyn Logger + Send>
 }
 
 impl WasiCtxBuilder {
@@ -102,6 +105,7 @@ impl WasiCtxBuilder {
             allowed_network_uses: AllowedNetworkUses::default(),
             allow_blocking_current_thread: false,
             built: false,
+            logger: Box::new(DummyLogger{})
         }
     }
 
@@ -453,6 +457,11 @@ impl WasiCtxBuilder {
         self
     }
 
+    pub fn set_logger(&mut self, logger: impl Logger + Send + 'static) -> &mut Self {
+        self.logger = Box::new(logger);
+        self
+    }
+
     /// Uses the configured context so far to construct the final [`WasiCtx`].
     ///
     /// Note that each `WasiCtxBuilder` can only be used to "build" once, and
@@ -482,6 +491,7 @@ impl WasiCtxBuilder {
             allowed_network_uses,
             allow_blocking_current_thread,
             built: _,
+            logger
         } = mem::replace(self, Self::new());
         self.built = true;
 
@@ -500,6 +510,7 @@ impl WasiCtxBuilder {
             monotonic_clock,
             allowed_network_uses,
             allow_blocking_current_thread,
+            logger
         }
     }
 
@@ -585,6 +596,7 @@ pub struct WasiCtx {
     pub(crate) socket_addr_check: SocketAddrCheck,
     pub(crate) allowed_network_uses: AllowedNetworkUses,
     pub(crate) allow_blocking_current_thread: bool,
+    pub(crate) logger: Box<dyn Logger + Send>
 }
 
 impl WasiCtx {
