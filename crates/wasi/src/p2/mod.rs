@@ -515,3 +515,114 @@ struct HasWasi<T>(T);
 impl<T: 'static> HasData for HasWasi<T> {
     type Data<'a> = WasiImpl<&'a mut T>;
 }
+
+pub fn add_clock_to_linker<'a, T: WasiView + 'static>(
+    linker: &mut Linker<T>
+) -> anyhow::Result<()>
+{
+    use crate::p2::bindings::{cli, clocks, filesystem, random, sockets};
+    let options = bindings::sync::LinkOptions::default();
+
+    let l = linker;
+    let f: fn(&mut T) -> WasiImpl<&mut T> = |t| WasiImpl(IoImpl(t));
+
+    clocks::wall_clock::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    clocks::monotonic_clock::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    Ok(())
+}
+
+pub fn add_random_to_linker<'a, T: WasiView + 'static>(
+    linker: &mut Linker<T>
+) -> anyhow::Result<()>
+{
+    use crate::p2::bindings::{cli, clocks, filesystem, random, sockets};
+    let options = bindings::sync::LinkOptions::default();
+
+    let l = linker;
+    let f: fn(&mut T) -> WasiImpl<&mut T> = |t| WasiImpl(IoImpl(t));
+    
+    random::random::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    random::insecure::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    random::insecure_seed::add_to_linker::<T, HasWasi<T>>(l, f)?;
+
+    Ok(())
+}
+
+pub fn add_filesystem_to_linker<'a, T: WasiView + 'static>(
+    linker: &mut Linker<T>
+) -> anyhow::Result<()>
+{
+    use crate::p2::bindings::{cli, clocks, filesystem, random, sockets};
+    let options = bindings::sync::LinkOptions::default();
+
+    let l = linker;
+    let f: fn(&mut T) -> WasiImpl<&mut T> = |t| WasiImpl(IoImpl(t));
+
+    filesystem::preopens::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    bindings::sync::filesystem::types::add_to_linker::<T, HasWasi<T>>(l, f)?;
+
+    Ok(())
+}
+
+pub fn add_sockets_to_linker<'a, T: WasiView + 'static>(
+    linker: &mut Linker<T>
+) -> anyhow::Result<()>
+{
+    use crate::p2::bindings::{cli, clocks, filesystem, random, sockets};
+    let options = bindings::sync::LinkOptions::default();
+
+    let l = linker;
+    let f: fn(&mut T) -> WasiImpl<&mut T> = |t| WasiImpl(IoImpl(t));
+
+    sockets::tcp_create_socket::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    sockets::udp_create_socket::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    sockets::instance_network::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    sockets::network::add_to_linker::<T, HasWasi<T>>(l, &options.into(), f)?;
+    sockets::ip_name_lookup::add_to_linker::<T, HasWasi<T>>(l, f)?;
+
+    bindings::sync::sockets::tcp::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    bindings::sync::sockets::udp::add_to_linker::<T, HasWasi<T>>(l, f)?;
+
+    Ok(())
+}
+
+pub fn add_cli_to_linker<'a, T: WasiView + 'static>(
+    linker: &mut Linker<T>
+) -> anyhow::Result<()>
+{
+    use crate::p2::bindings::{cli, clocks, filesystem, random, sockets};
+    let options = bindings::sync::LinkOptions::default();
+
+    let l = linker;
+    let f: fn(&mut T) -> WasiImpl<&mut T> = |t| WasiImpl(IoImpl(t));
+
+    cli::exit::add_to_linker::<T, HasWasi<T>>(l, &options.into(), f)?;
+    cli::environment::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    cli::stdin::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    cli::stdout::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    cli::stderr::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    cli::terminal_input::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    cli::terminal_output::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    cli::terminal_stdin::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    cli::terminal_stdout::add_to_linker::<T, HasWasi<T>>(l, f)?;
+    cli::terminal_stderr::add_to_linker::<T, HasWasi<T>>(l, f)?;
+
+    Ok(())
+}
+
+pub fn add_io_to_linker<'a, T: WasiView + 'static>(
+    linker: &mut Linker<T>
+) -> anyhow::Result<()>
+{
+    use crate::p2::bindings::{cli, clocks, filesystem, random, sockets};
+    let options = bindings::sync::LinkOptions::default();
+
+    let l = linker;
+    let f: fn(&mut T) -> IoImpl<&mut T> = |t| IoImpl(t);
+
+    wasmtime_wasi_io::bindings::wasi::io::error::add_to_linker::<T, HasIo<T>>(l, f)?;
+    bindings::sync::io::poll::add_to_linker::<T, HasIo<T>>(l, f)?;
+    bindings::sync::io::streams::add_to_linker::<T, HasIo<T>>(l, f)?;
+
+    Ok(())
+}
