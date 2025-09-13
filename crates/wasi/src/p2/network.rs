@@ -11,6 +11,12 @@ impl From<wasmtime::component::ResourceTableError> for SocketError {
     }
 }
 
+impl From<anyhow::Error> for SocketError {
+    fn from(error: anyhow::Error) -> Self {
+        Self::trap(error)
+    }
+}
+
 impl From<std::io::Error> for SocketError {
     fn from(error: std::io::Error) -> Self {
         ErrorCode::from(error).into()

@@ -13,6 +13,16 @@ use wasmtime_wasi_io::{
     streams::{DynInputStream, DynOutputStream},
 };
 
+pub enum TCPEvent {
+    Read,
+    Write,
+    Connect,
+    Listen,
+    Accept,
+    Creation,
+    Option(String)
+}
+
 impl<T> tcp::Host for WasiImpl<T> where T: WasiView {}
 
 impl<T> crate::p2::host::tcp::tcp::HostTcpSocket for WasiImpl<T>
@@ -26,6 +36,7 @@ where
         local_address: IpSocketAddress,
     ) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (start_bind) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("bind".into()))?;
         self.ctx().allowed_network_uses.check_allowed_tcp()?;
         let table = self.table();
         let network = table.get(&network)?;
@@ -44,6 +55,7 @@ where
 
     fn finish_bind(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (finish_bind) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("finish_bind".into()))?;
         let table = self.table();
         let socket = table.get_mut(&this)?;
 
@@ -57,6 +69,7 @@ where
         remote_address: IpSocketAddress,
     ) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (start_connect) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Connect)?;
         self.ctx().allowed_network_uses.check_allowed_tcp()?;
         let table = self.table();
         let network = table.get(&network)?;
@@ -78,6 +91,7 @@ where
         this: Resource<tcp::TcpSocket>,
     ) -> SocketResult<(Resource<DynInputStream>, Resource<DynOutputStream>)> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (finish_connect) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Connect)?;
         let table = self.table();
         let socket = table.get_mut(&this)?;
 
@@ -91,6 +105,7 @@ where
 
     fn start_listen(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (start_listen) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Listen)?;
         self.ctx().allowed_network_uses.check_allowed_tcp()?;
         let table = self.table();
         let socket = table.get_mut(&this)?;
@@ -100,6 +115,7 @@ where
 
     fn finish_listen(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (finish_listen) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Listen)?;
         let table = self.table();
         let socket = table.get_mut(&this)?;
         socket.finish_listen()
@@ -114,6 +130,7 @@ where
         Resource<DynOutputStream>,
     )> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (accept) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Accept)?;
         self.ctx().allowed_network_uses.check_allowed_tcp()?;
         let table = self.table();
         let socket = table.get_mut(&this)?;
@@ -129,6 +146,7 @@ where
 
     fn local_address(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<IpSocketAddress> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (local_address) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("local_address".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -137,6 +155,7 @@ where
 
     fn remote_address(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<IpSocketAddress> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (remote_address) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("remote_address".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -145,6 +164,7 @@ where
 
     fn is_listening(&mut self, this: Resource<tcp::TcpSocket>) -> Result<bool, anyhow::Error> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (is_listening) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("is_listening".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -156,6 +176,7 @@ where
         this: Resource<tcp::TcpSocket>,
     ) -> Result<IpAddressFamily, anyhow::Error> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (address_family) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("address_family".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -171,6 +192,7 @@ where
         value: u64,
     ) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_listen_backlog_size) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("set_listen_backlog_size".into()))?;
         let table = self.table();
         let socket = table.get_mut(&this)?;
 
@@ -182,6 +204,7 @@ where
 
     fn keep_alive_enabled(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<bool> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_enabled) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("keep_alive_enabled".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
         socket.keep_alive_enabled()
@@ -193,6 +216,7 @@ where
         value: bool,
     ) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_enabled) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("set_keep_alive_enabled".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
         socket.set_keep_alive_enabled(value)
@@ -200,6 +224,7 @@ where
 
     fn keep_alive_idle_time(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<u64> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_idle_time) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("keep_alive_idle_time".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
         Ok(socket.keep_alive_idle_time()?.as_nanos() as u64)
@@ -211,6 +236,7 @@ where
         value: u64,
     ) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_idle_time) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("set_keep_alive_idle_time".into()))?;
         let table = self.table();
         let socket = table.get_mut(&this)?;
         let duration = Duration::from_nanos(value);
@@ -219,6 +245,7 @@ where
 
     fn keep_alive_interval(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<u64> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_interval) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("keep_alive_interval".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
         Ok(socket.keep_alive_interval()?.as_nanos() as u64)
@@ -230,6 +257,7 @@ where
         value: u64,
     ) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_interval) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("set_keep_alive_interval".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
         socket.set_keep_alive_interval(Duration::from_nanos(value))
@@ -237,6 +265,7 @@ where
 
     fn keep_alive_count(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<u32> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_count) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("keep_alive_count".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
         socket.keep_alive_count()
@@ -248,6 +277,7 @@ where
         value: u32,
     ) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_count) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("set_keep_alive_count".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
         socket.set_keep_alive_count(value)
@@ -255,6 +285,7 @@ where
 
     fn hop_limit(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<u8> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (hop_limit) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("hop_limit".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
         socket.hop_limit()
@@ -262,6 +293,7 @@ where
 
     fn set_hop_limit(&mut self, this: Resource<tcp::TcpSocket>, value: u8) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_hop_limit) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("set_hop_limit".into()))?;
         let table = self.table();
         let socket = table.get_mut(&this)?;
         socket.set_hop_limit(value)
@@ -269,6 +301,7 @@ where
 
     fn receive_buffer_size(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<u64> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (receive_buffer_size) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("receive_buffer_size".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -281,6 +314,7 @@ where
         value: u64,
     ) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_receive_buffer_size) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("set_receive_buffer_size".into()))?;
         let table = self.table();
         let socket = table.get_mut(&this)?;
         let value = value.try_into().unwrap_or(usize::MAX);
@@ -289,6 +323,7 @@ where
 
     fn send_buffer_size(&mut self, this: Resource<tcp::TcpSocket>) -> SocketResult<u64> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (send_buffer_size) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("send_buffer_size".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -300,7 +335,8 @@ where
         this: Resource<tcp::TcpSocket>,
         value: u64,
     ) -> SocketResult<()> {
-        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (send_buffer_size) function.".into());
+        self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_send_buffer_size) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("set_send_buffer_size".into()))?;
         let table = self.table();
         let socket = table.get_mut(&this)?;
         let value = value.try_into().unwrap_or(usize::MAX);
@@ -312,6 +348,7 @@ where
         this: Resource<tcp::TcpSocket>,
     ) -> anyhow::Result<Resource<DynPollable>> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (subscribe) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("subscribe".into()))?;
         wasmtime_wasi_io::poll::subscribe(self.table(), this)
     }
 
@@ -321,6 +358,7 @@ where
         shutdown_type: ShutdownType,
     ) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (shutdown) function.".into());
+        self.ctx().event_handler.accepts(&TCPEvent::Option("shutdown".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -363,6 +401,8 @@ pub mod sync {
     };
     use crate::runtime::in_tokio;
 
+    use super::TCPEvent;
+
     impl<T> tcp::Host for WasiImpl<T> where T: WasiView {}
 
     impl<T> HostTcpSocket for WasiImpl<T>
@@ -376,6 +416,7 @@ pub mod sync {
             local_address: IpSocketAddress,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (start_bind) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("start_bind".into()))?;
             in_tokio(async {
                 AsyncHostTcpSocket::start_bind(self, self_, network, local_address).await
             })
@@ -383,6 +424,7 @@ pub mod sync {
 
         fn finish_bind(&mut self, self_: Resource<TcpSocket>) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (finish_bind) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("finish_bind".into()))?;
             AsyncHostTcpSocket::finish_bind(self, self_)
         }
 
@@ -393,6 +435,7 @@ pub mod sync {
             remote_address: IpSocketAddress,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (start_conect) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Connect)?;
             in_tokio(async {
                 AsyncHostTcpSocket::start_connect(self, self_, network, remote_address).await
             })
@@ -403,16 +446,19 @@ pub mod sync {
             self_: Resource<TcpSocket>,
         ) -> Result<(Resource<InputStream>, Resource<OutputStream>), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (finish_connect) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Connect)?;
             AsyncHostTcpSocket::finish_connect(self, self_)
         }
 
         fn start_listen(&mut self, self_: Resource<TcpSocket>) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (start_listen) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Listen)?;
             AsyncHostTcpSocket::start_listen(self, self_)
         }
 
         fn finish_listen(&mut self, self_: Resource<TcpSocket>) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (finish_listen) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Listen)?;
             AsyncHostTcpSocket::finish_listen(self, self_)
         }
 
@@ -428,6 +474,7 @@ pub mod sync {
             SocketError,
         > {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (accept) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Accept)?;
             AsyncHostTcpSocket::accept(self, self_)
         }
 
@@ -436,6 +483,7 @@ pub mod sync {
             self_: Resource<TcpSocket>,
         ) -> Result<IpSocketAddress, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (local_address) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("local_address".into()))?;
             AsyncHostTcpSocket::local_address(self, self_)
         }
 
@@ -444,11 +492,13 @@ pub mod sync {
             self_: Resource<TcpSocket>,
         ) -> Result<IpSocketAddress, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (remote_address) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("remote_address".into()))?;
             AsyncHostTcpSocket::remote_address(self, self_)
         }
 
         fn is_listening(&mut self, self_: Resource<TcpSocket>) -> wasmtime::Result<bool> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (is_listening) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("is_listening".into()))?;
             AsyncHostTcpSocket::is_listening(self, self_)
         }
 
@@ -457,6 +507,7 @@ pub mod sync {
             self_: Resource<TcpSocket>,
         ) -> wasmtime::Result<IpAddressFamily> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (address_family) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("address_family".into()))?;
             AsyncHostTcpSocket::address_family(self, self_)
         }
 
@@ -466,11 +517,13 @@ pub mod sync {
             value: u64,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_listen_backlog_size) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("set_listen_backlog_size".into()))?;
             AsyncHostTcpSocket::set_listen_backlog_size(self, self_, value)
         }
 
         fn keep_alive_enabled(&mut self, self_: Resource<TcpSocket>) -> Result<bool, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_enabled) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("keep_alive_enabled".into()))?;
             AsyncHostTcpSocket::keep_alive_enabled(self, self_)
         }
 
@@ -480,6 +533,7 @@ pub mod sync {
             value: bool,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_enabled) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("set_keep_alive_enabled".into()))?;
             AsyncHostTcpSocket::set_keep_alive_enabled(self, self_, value)
         }
 
@@ -488,6 +542,7 @@ pub mod sync {
             self_: Resource<TcpSocket>,
         ) -> Result<Duration, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_idle_time) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("keep_alive_idle_time".into()))?;
             AsyncHostTcpSocket::keep_alive_idle_time(self, self_)
         }
 
@@ -497,6 +552,7 @@ pub mod sync {
             value: Duration,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_idle_time) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("set_keep_alive_idle_time".into()))?;
             AsyncHostTcpSocket::set_keep_alive_idle_time(self, self_, value)
         }
 
@@ -505,6 +561,7 @@ pub mod sync {
             self_: Resource<TcpSocket>,
         ) -> Result<Duration, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_interval) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("keep_alive_interval".into()))?;
             AsyncHostTcpSocket::keep_alive_interval(self, self_)
         }
 
@@ -514,11 +571,13 @@ pub mod sync {
             value: Duration,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_interval) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("set_keep_alive_interval".into()))?;
             AsyncHostTcpSocket::set_keep_alive_interval(self, self_, value)
         }
 
         fn keep_alive_count(&mut self, self_: Resource<TcpSocket>) -> Result<u32, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (keep_alive_count) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("keep_alive_count".into()))?;
             AsyncHostTcpSocket::keep_alive_count(self, self_)
         }
 
@@ -528,11 +587,13 @@ pub mod sync {
             value: u32,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_keep_alive_count) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("set_keep_alive_count".into()))?;
             AsyncHostTcpSocket::set_keep_alive_count(self, self_, value)
         }
 
         fn hop_limit(&mut self, self_: Resource<TcpSocket>) -> Result<u8, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (hop_limit) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("hop_limit".into()))?;
             AsyncHostTcpSocket::hop_limit(self, self_)
         }
 
@@ -542,11 +603,13 @@ pub mod sync {
             value: u8,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_hop_limit) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("set_hop_limit".into()))?;
             AsyncHostTcpSocket::set_hop_limit(self, self_, value)
         }
 
         fn receive_buffer_size(&mut self, self_: Resource<TcpSocket>) -> Result<u64, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (receive_buffer_size) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("receive_buffer_size".into()))?;
             AsyncHostTcpSocket::receive_buffer_size(self, self_)
         }
 
@@ -556,11 +619,13 @@ pub mod sync {
             value: u64,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_receive_buffer_size) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("set_receive_buffer_size".into()))?;
             AsyncHostTcpSocket::set_receive_buffer_size(self, self_, value)
         }
 
         fn send_buffer_size(&mut self, self_: Resource<TcpSocket>) -> Result<u64, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (send_buffer_size) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("send_buffer_size".into()))?;
             AsyncHostTcpSocket::send_buffer_size(self, self_)
         }
 
@@ -570,6 +635,7 @@ pub mod sync {
             value: u64,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (set_send_buffer_size) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("set_send_buffer_size".into()))?;
             AsyncHostTcpSocket::set_send_buffer_size(self, self_, value)
         }
 
@@ -578,6 +644,7 @@ pub mod sync {
             self_: Resource<TcpSocket>,
         ) -> wasmtime::Result<Resource<Pollable>> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (subscribe) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("subscribe".into()))?;
             AsyncHostTcpSocket::subscribe(self, self_)
         }
 
@@ -587,6 +654,7 @@ pub mod sync {
             shutdown_type: ShutdownType,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling tcp sockets (shutdown) function.".into());
+            self.ctx().event_handler.accepts(&TCPEvent::Option("shutdown".into()))?;
             AsyncHostTcpSocket::shutdown(self, self_, shutdown_type.into())
         }
 

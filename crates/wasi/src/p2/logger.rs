@@ -13,7 +13,7 @@ pub trait Logger {
 pub struct DummyLogger {}
 
 impl Logger for DummyLogger {
-    fn log(&mut self, log_level: LogLevel, log: String) {
+    fn log(&mut self, _log_level: LogLevel, _log: String) {
         
     }
 }

@@ -24,6 +24,12 @@ impl From<io::Error> for FsError {
     }
 }
 
+impl From<anyhow::Error> for FsError {
+    fn from(error: anyhow::Error) -> Self {
+        FsError::trap(error)
+    }
+}
+
 pub enum Descriptor {
     File(File),
     Dir(Dir),

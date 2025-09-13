@@ -14,6 +14,18 @@ use wasmtime_wasi_io::streams::{DynInputStream, DynOutputStream};
 
 mod sync;
 
+pub enum FSEvent {
+    ReadFS,
+    WriteFS,
+    OpenFS,
+    ListDir,
+    MakeDir,
+    RmDir,
+    ReadDir,
+    RenameDir,
+    Other(String)
+}
+
 impl<T> preopens::Host for WasiImpl<T>
 where
     T: WasiView,
@@ -22,6 +34,7 @@ where
         &mut self,
     ) -> Result<Vec<(Resource<types::Descriptor>, String)>, anyhow::Error> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling preopens (get_directories) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::ListDir)?;
         let mut results = Vec::new();
         for (dir, name) in self.ctx().preopens.clone() {
             let fd = self
@@ -71,6 +84,7 @@ where
         advice: types::Advice,
     ) -> FsResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (advise) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("advise".into()))?;
         use system_interface::fs::{Advice as A, FileIoExt};
         use types::Advice;
 
@@ -91,6 +105,7 @@ where
 
     async fn sync_data(&mut self, fd: Resource<types::Descriptor>) -> FsResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (sync_data) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("sync_data".into()))?;
         let descriptor = self.table().get(&fd)?;
 
         match descriptor {
@@ -122,6 +137,7 @@ where
         fd: Resource<types::Descriptor>,
     ) -> FsResult<types::DescriptorFlags> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (get_flags) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("get_flags".into()))?;
         use system_interface::fs::{FdFlags, GetSetFdFlags};
         use types::DescriptorFlags;
 
@@ -171,6 +187,7 @@ where
         fd: Resource<types::Descriptor>,
     ) -> FsResult<types::DescriptorType> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (get_type) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("get_type".into()))?;
         let descriptor = self.table().get(&fd)?;
 
         match descriptor {
@@ -188,6 +205,7 @@ where
         size: types::Filesize,
     ) -> FsResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (set_size) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("set_size".into()))?;
         let f = self.table().get(&fd)?.file()?;
         if !f.perms.contains(FilePerms::WRITE) {
             Err(ErrorCode::NotPermitted)?;
@@ -203,6 +221,7 @@ where
         mtim: types::NewTimestamp,
     ) -> FsResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (set_times) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("set_time".into()))?;
         use fs_set_times::SetTimes;
 
         let descriptor = self.table().get(&fd)?;
@@ -235,6 +254,7 @@ where
         offset: types::Filesize,
     ) -> FsResult<(Vec<u8>, bool)> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (read) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::ReadFS)?;
         use std::io::IoSliceMut;
         use system_interface::fs::FileIoExt;
 
@@ -270,6 +290,7 @@ where
         offset: types::Filesize,
     ) -> FsResult<types::Filesize> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (write) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::WriteFS)?;
         use std::io::IoSlice;
         use system_interface::fs::FileIoExt;
 
@@ -291,6 +312,7 @@ where
         fd: Resource<types::Descriptor>,
     ) -> FsResult<Resource<types::DirectoryEntryStream>> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (read_directory) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::ReadDir)?;
         let table = self.table();
         let d = table.get(&fd)?.dir()?;
         if !d.perms.contains(DirPerms::READ) {
@@ -354,6 +376,7 @@ where
 
     async fn sync(&mut self, fd: Resource<types::Descriptor>) -> FsResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (sync) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("sync".into()))?;
         let descriptor = self.table().get(&fd)?;
 
         match descriptor {
@@ -386,6 +409,7 @@ where
         path: String,
     ) -> FsResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (create_directory_at) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::MakeDir)?;
         let table = self.table();
         let d = table.get(&fd)?.dir()?;
         if !d.perms.contains(DirPerms::MUTATE) {
@@ -397,6 +421,7 @@ where
 
     async fn stat(&mut self, fd: Resource<types::Descriptor>) -> FsResult<types::DescriptorStat> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (stat) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("stat".into()))?;
         let descriptor = self.table().get(&fd)?;
         match descriptor {
             Descriptor::File(f) => {
@@ -419,6 +444,7 @@ where
         path: String,
     ) -> FsResult<types::DescriptorStat> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (stat_at) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("stat_at".into()))?;
         let table = self.table();
         let d = table.get(&fd)?.dir()?;
         if !d.perms.contains(DirPerms::READ) {
@@ -442,6 +468,7 @@ where
         mtim: types::NewTimestamp,
     ) -> FsResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (set_times_at) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("set_times_at".into()))?;
         use cap_fs_ext::DirExt;
 
         let table = self.table();
@@ -483,6 +510,7 @@ where
         new_path: String,
     ) -> FsResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (link_at) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("link_at".into()))?;
         let table = self.table();
         let old_dir = table.get(&fd)?.dir()?;
         if !old_dir.perms.contains(DirPerms::MUTATE) {
@@ -511,6 +539,7 @@ where
         flags: types::DescriptorFlags,
     ) -> FsResult<Resource<types::Descriptor>> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (open_at) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::OpenFS)?;
         use cap_fs_ext::{FollowSymlinks, OpenOptionsFollowExt, OpenOptionsMaybeDirExt};
         use system_interface::fs::{FdFlags, GetSetFdFlags};
         use types::{DescriptorFlags, OpenFlags};
@@ -666,6 +695,7 @@ where
         path: String,
     ) -> FsResult<String> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (readlink_at) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::ReadFS)?;
         let table = self.table();
         let d = table.get(&fd)?.dir()?;
         if !d.perms.contains(DirPerms::READ) {
@@ -684,6 +714,7 @@ where
         path: String,
     ) -> FsResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (remove_directory_at) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::RmDir)?;
         let table = self.table();
         let d = table.get(&fd)?.dir()?;
         if !d.perms.contains(DirPerms::MUTATE) {
@@ -700,6 +731,7 @@ where
         new_path: String,
     ) -> FsResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (rename_at) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::RenameDir)?;
         let table = self.table();
         let old_dir = table.get(&fd)?.dir()?;
         if !old_dir.perms.contains(DirPerms::MUTATE) {
@@ -722,6 +754,7 @@ where
         dest_path: String,
     ) -> FsResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (symlink_at) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("symlink_at".into()))?;
         // On windows, Dir.symlink is provided by DirExt
         #[cfg(windows)]
         use cap_fs_ext::DirExt;
@@ -741,6 +774,8 @@ where
         path: String,
     ) -> FsResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (unlink_file_at) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("unlink_file_at".into()))?;
+        // On windows, Dir.symlink is provided by DirExt
         use cap_fs_ext::DirExt;
 
         let table = self.table();
@@ -758,6 +793,7 @@ where
         offset: types::Filesize,
     ) -> FsResult<Resource<DynInputStream>> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (read_via_stream) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::ReadFS)?;
         // Trap if fd lookup fails:
         let f = self.table().get(&fd)?.file()?;
 
@@ -780,6 +816,7 @@ where
         offset: types::Filesize,
     ) -> FsResult<Resource<DynOutputStream>> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (write_via_stream) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::WriteFS)?;
         // Trap if fd lookup fails:
         let f = self.table().get(&fd)?.file()?;
 
@@ -802,6 +839,7 @@ where
         fd: Resource<types::Descriptor>,
     ) -> FsResult<Resource<DynOutputStream>> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (append_via_stream) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::WriteFS)?;
         // Trap if fd lookup fails:
         let f = self.table().get(&fd)?.file()?;
 
@@ -825,6 +863,7 @@ where
         b: Resource<types::Descriptor>,
     ) -> anyhow::Result<bool> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (is_same_object) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("is_same_object".into()))?;
         use cap_fs_ext::MetadataExt;
         let descriptor_a = self.table().get(&a)?;
         let meta_a = get_descriptor_metadata(descriptor_a).await?;
@@ -852,6 +891,7 @@ where
         fd: Resource<types::Descriptor>,
     ) -> FsResult<types::MetadataHashValue> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (metadata_hash) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("metadata_hash".into()))?;
         let descriptor_a = self.table().get(&fd)?;
         let meta = get_descriptor_metadata(descriptor_a).await?;
         Ok(calculate_metadata_hash(&meta))
@@ -863,6 +903,7 @@ where
         path: String,
     ) -> FsResult<types::MetadataHashValue> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host descriptor (metadata_hash_at) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::Other("metadata_hash_at".into()))?;
         let table = self.table();
         let d = table.get(&fd)?.dir()?;
         // No permissions check on metadata: if dir opened, allowed to stat it
@@ -888,6 +929,7 @@ where
         stream: Resource<types::DirectoryEntryStream>,
     ) -> FsResult<Option<types::DirectoryEntry>> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling host directory entry stream (read_directory_entry) function.".into());
+        self.ctx().event_handler.accepts(&FSEvent::ReadDir)?;
         let table = self.table();
         let readdir = table.get(&stream)?;
         readdir.next()

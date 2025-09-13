@@ -20,6 +20,13 @@ const MAX_UDP_DATAGRAM_SIZE: usize = u16::MAX as usize;
 
 impl<T> udp::Host for WasiImpl<T> where T: WasiView {}
 
+pub enum UDPEvent {
+    Receieve,
+    Send,
+    Creation,
+    Option(String)
+}
+
 impl<T> udp::HostUdpSocket for WasiImpl<T>
 where
     T: WasiView,
@@ -31,6 +38,7 @@ where
         local_address: IpSocketAddress,
     ) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp sockets (start_bind) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("start_bind".into()))?;
         self.ctx().allowed_network_uses.check_allowed_udp()?;
         let table = self.table();
 
@@ -77,6 +85,7 @@ where
 
     fn finish_bind(&mut self, this: Resource<udp::UdpSocket>) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp sockets (finish_bind) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("finish_bind".into()))?;
         let table = self.table();
         let socket = table.get_mut(&this)?;
 
@@ -98,6 +107,7 @@ where
         Resource<udp::OutgoingDatagramStream>,
     )> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp sockets (stream) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("stream".into()))?;
         let table = self.table();
 
         let has_active_streams = table
@@ -172,6 +182,7 @@ where
 
     fn local_address(&mut self, this: Resource<udp::UdpSocket>) -> SocketResult<IpSocketAddress> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp sockets (local_address) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("local_address".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -190,6 +201,7 @@ where
 
     fn remote_address(&mut self, this: Resource<udp::UdpSocket>) -> SocketResult<IpSocketAddress> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp sockets (remote_address) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("remote_address".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -210,6 +222,7 @@ where
         this: Resource<udp::UdpSocket>,
     ) -> Result<IpAddressFamily, anyhow::Error> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp sockets (address_family) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("address_family".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -221,6 +234,7 @@ where
 
     fn unicast_hop_limit(&mut self, this: Resource<udp::UdpSocket>) -> SocketResult<u8> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp sockets (unicast_hop_limit) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("unicast_hop_limit".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -237,7 +251,8 @@ where
         this: Resource<udp::UdpSocket>,
         value: u8,
     ) -> SocketResult<()> {
-        self.ctx().logger.log(LogLevel::DEBUG, "calling udp sockets (set_unicast_limit) function.".into());
+        self.ctx().logger.log(LogLevel::DEBUG, "calling udp sockets (set_unicast_hop_limit) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("set_unicast_hop_limit".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -251,6 +266,7 @@ where
 
     fn receive_buffer_size(&mut self, this: Resource<udp::UdpSocket>) -> SocketResult<u64> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp sockets (receive_buffer_size) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("receive_buffer_size".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -264,6 +280,7 @@ where
         value: u64,
     ) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp sockets (set_receive_buffer_size) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("set_receive_buffer_size".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
         let value = value.try_into().unwrap_or(usize::MAX);
@@ -274,6 +291,7 @@ where
 
     fn send_buffer_size(&mut self, this: Resource<udp::UdpSocket>) -> SocketResult<u64> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp sockets (send_buffer_size) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("send_buffer_size".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
 
@@ -287,6 +305,7 @@ where
         value: u64,
     ) -> SocketResult<()> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp sockets (set_send_buffer_size) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("set_send_buffer_size".into()))?;
         let table = self.table();
         let socket = table.get(&this)?;
         let value = value.try_into().unwrap_or(usize::MAX);
@@ -300,6 +319,7 @@ where
         this: Resource<udp::UdpSocket>,
     ) -> anyhow::Result<Resource<DynPollable>> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp sockets (subscribe) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("subscribe".into()))?;
         wasmtime_wasi_io::poll::subscribe(self.table(), this)
     }
 
@@ -326,6 +346,7 @@ where
         max_results: u64,
     ) -> SocketResult<Vec<udp::IncomingDatagram>> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp incoming sockets (receive) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Receieve)?;
         // Returns Ok(None) when the message was dropped.
         fn recv_one(
             stream: &IncomingDatagramStream,
@@ -386,6 +407,7 @@ where
         this: Resource<udp::IncomingDatagramStream>,
     ) -> anyhow::Result<Resource<DynPollable>> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp incoming sockets (subscribe) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("subscribe".into()))?;
         wasmtime_wasi_io::poll::subscribe(self.table(), this)
     }
 
@@ -419,6 +441,7 @@ where
 {
     fn check_send(&mut self, this: Resource<udp::OutgoingDatagramStream>) -> SocketResult<u64> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp outgoing sockets (check_send) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("check_send".into()))?;
         let table = self.table();
         let stream = table.get_mut(&this)?;
 
@@ -441,6 +464,7 @@ where
         datagrams: Vec<udp::OutgoingDatagram>,
     ) -> SocketResult<u64> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp outgoing sockets (send) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Send)?;
         async fn send_one(
             stream: &OutgoingDatagramStream,
             datagram: &udp::OutgoingDatagram,
@@ -529,6 +553,7 @@ where
         this: Resource<udp::OutgoingDatagramStream>,
     ) -> anyhow::Result<Resource<DynPollable>> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling udp outgoing sockets (subscribe) function.".into());
+        self.ctx().event_handler.accepts(&UDPEvent::Option("subscribe".into()))?;
         wasmtime_wasi_io::poll::subscribe(self.table(), this)
     }
 
@@ -587,6 +612,8 @@ pub mod sync {
     };
     use crate::runtime::in_tokio;
 
+    use super::UDPEvent;
+
     impl<T> udp::Host for WasiImpl<T> where T: WasiView {}
 
     impl<T> HostUdpSocket for WasiImpl<T>
@@ -600,6 +627,7 @@ pub mod sync {
             local_address: IpSocketAddress,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp sync socket (start_bind) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("start_bind".into()))?;
             in_tokio(async {
                 AsyncHostUdpSocket::start_bind(self, self_, network, local_address).await
             })
@@ -607,6 +635,7 @@ pub mod sync {
 
         fn finish_bind(&mut self, self_: Resource<UdpSocket>) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp sync socket (finish_bind) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("finish_bind".into()))?;
             AsyncHostUdpSocket::finish_bind(self, self_)
         }
 
@@ -622,6 +651,7 @@ pub mod sync {
             SocketError,
         > {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp sync socket (stream) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("stream".into()))?;
             in_tokio(async { AsyncHostUdpSocket::stream(self, self_, remote_address).await })
         }
 
@@ -630,6 +660,7 @@ pub mod sync {
             self_: Resource<UdpSocket>,
         ) -> Result<IpSocketAddress, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp sync socket (local_address) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("local_address".into()))?;
             AsyncHostUdpSocket::local_address(self, self_)
         }
 
@@ -638,6 +669,7 @@ pub mod sync {
             self_: Resource<UdpSocket>,
         ) -> Result<IpSocketAddress, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp sync socket (remote_address) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("remote_address".into()))?;
             AsyncHostUdpSocket::remote_address(self, self_)
         }
 
@@ -646,11 +678,13 @@ pub mod sync {
             self_: Resource<UdpSocket>,
         ) -> wasmtime::Result<IpAddressFamily> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp sync socket (address_family) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("address_family".into()))?;
             AsyncHostUdpSocket::address_family(self, self_)
         }
 
         fn unicast_hop_limit(&mut self, self_: Resource<UdpSocket>) -> Result<u8, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp sync socket (unicast_hop_limit) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("unicast_hop_limit".into()))?;
             AsyncHostUdpSocket::unicast_hop_limit(self, self_)
         }
 
@@ -660,11 +694,13 @@ pub mod sync {
             value: u8,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp sync socket (set_unicast_hop_limit) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("set_unicast_hop_limit".into()))?;
             AsyncHostUdpSocket::set_unicast_hop_limit(self, self_, value)
         }
 
         fn receive_buffer_size(&mut self, self_: Resource<UdpSocket>) -> Result<u64, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp sync socket (receive_buffer_size) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("receive_buffer_size".into()))?;
             AsyncHostUdpSocket::receive_buffer_size(self, self_)
         }
 
@@ -674,11 +710,13 @@ pub mod sync {
             value: u64,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp sync socket (set_receive_buffer_size) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("set_receive_buffer_size".into()))?;
             AsyncHostUdpSocket::set_receive_buffer_size(self, self_, value)
         }
 
         fn send_buffer_size(&mut self, self_: Resource<UdpSocket>) -> Result<u64, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp sync socket (send_buffer_size) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("send_buffer_size".into()))?;
             AsyncHostUdpSocket::send_buffer_size(self, self_)
         }
 
@@ -688,6 +726,7 @@ pub mod sync {
             value: u64,
         ) -> Result<(), SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp sync socket (set_send_buffer_size) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("set_send_buffer_size".into()))?;
             AsyncHostUdpSocket::set_send_buffer_size(self, self_, value)
         }
 
@@ -696,6 +735,7 @@ pub mod sync {
             self_: Resource<UdpSocket>,
         ) -> wasmtime::Result<Resource<Pollable>> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp sync socket (subscribe) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("subscribe".into()))?;
             AsyncHostUdpSocket::subscribe(self, self_)
         }
 
@@ -715,6 +755,7 @@ pub mod sync {
             max_results: u64,
         ) -> Result<Vec<IncomingDatagram>, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp incoming socket (receive) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Receieve)?;
             Ok(
                 AsyncHostIncomingDatagramStream::receive(self, self_, max_results)?
                     .into_iter()
@@ -728,6 +769,7 @@ pub mod sync {
             self_: Resource<IncomingDatagramStream>,
         ) -> wasmtime::Result<Resource<Pollable>> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp incoming socket (subscribe) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("subscribe".into()))?;
             AsyncHostIncomingDatagramStream::subscribe(self, self_)
         }
 
@@ -759,6 +801,7 @@ pub mod sync {
             self_: Resource<OutgoingDatagramStream>,
         ) -> Result<u64, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp incoming socket (drop) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("check_send".into()))?;
             AsyncHostOutgoingDatagramStream::check_send(self, self_)
         }
 
@@ -768,6 +811,7 @@ pub mod sync {
             datagrams: Vec<OutgoingDatagram>,
         ) -> Result<u64, SocketError> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp incoming socket (send) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Send)?;
             let datagrams = datagrams.into_iter().map(Into::into).collect();
             in_tokio(async { AsyncHostOutgoingDatagramStream::send(self, self_, datagrams).await })
         }
@@ -777,6 +821,7 @@ pub mod sync {
             self_: Resource<OutgoingDatagramStream>,
         ) -> wasmtime::Result<Resource<Pollable>> {
             self.ctx().logger.log(LogLevel::DEBUG, "calling udp incoming socket (subscribe) function.".into());
+            self.ctx().event_handler.accepts(&UDPEvent::Option("subscribe".into()))?;
             AsyncHostOutgoingDatagramStream::subscribe(self, self_)
         }
 

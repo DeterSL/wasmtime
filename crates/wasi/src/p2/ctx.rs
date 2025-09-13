@@ -17,7 +17,7 @@ use std::sync::Arc;
 use std::{future::Future, pin::Pin};
 use std::{mem, net::SocketAddr};
 
-use super::{Logger, logger::DummyLogger};
+use super::{Logger, logger::DummyLogger, event_handler::EventHandler};
 
 /// Builder-style structure used to create a [`WasiCtx`].
 ///
@@ -55,7 +55,8 @@ pub struct WasiCtxBuilder {
     allowed_network_uses: AllowedNetworkUses,
     allow_blocking_current_thread: bool,
     built: bool,
-    logger: Box<dyn Logger + Send>
+    logger: Box<dyn Logger + Send>,
+    event_handler: EventHandler
 }
 
 impl WasiCtxBuilder {
@@ -105,7 +106,8 @@ impl WasiCtxBuilder {
             allowed_network_uses: AllowedNetworkUses::default(),
             allow_blocking_current_thread: false,
             built: false,
-            logger: Box::new(DummyLogger{})
+            logger: Box::new(DummyLogger{}),
+            event_handler: EventHandler::new()
         }
     }
 
@@ -491,7 +493,8 @@ impl WasiCtxBuilder {
             allowed_network_uses,
             allow_blocking_current_thread,
             built: _,
-            logger
+            logger,
+            event_handler
         } = mem::replace(self, Self::new());
         self.built = true;
 
@@ -510,7 +513,8 @@ impl WasiCtxBuilder {
             monotonic_clock,
             allowed_network_uses,
             allow_blocking_current_thread,
-            logger
+            logger,
+            event_handler
         }
     }
 
@@ -596,7 +600,8 @@ pub struct WasiCtx {
     pub(crate) socket_addr_check: SocketAddrCheck,
     pub(crate) allowed_network_uses: AllowedNetworkUses,
     pub(crate) allow_blocking_current_thread: bool,
-    pub(crate) logger: Box<dyn Logger + Send>
+    pub(crate) logger: Box<dyn Logger + Send>,
+    pub(crate) event_handler: EventHandler
 }
 
 impl WasiCtx {

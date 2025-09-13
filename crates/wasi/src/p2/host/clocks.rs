@@ -4,9 +4,14 @@ use crate::p2::{bindings::{
 }, LogLevel};
 use crate::p2::{DynPollable, IoView, WasiImpl, WasiView};
 use cap_std::time::SystemTime;
-use std::{time::Duration, fmt};
+use std::time::Duration;
 use wasmtime::component::Resource;
 use wasmtime_wasi_io::poll::{Pollable, subscribe};
+
+pub enum ClockEvent {
+    WallClock,
+    MonotonicClock
+}
 
 impl TryFrom<SystemTime> for Datetime {
     type Error = anyhow::Error;
@@ -28,6 +33,7 @@ where
 {
     fn now(&mut self) -> anyhow::Result<Datetime> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling wall clock (now) function.".into());
+        self.ctx().event_handler.accepts(&ClockEvent::WallClock)?;
         let now = self.ctx().wall_clock.now();
         Ok(Datetime {
             seconds: now.as_secs(),
@@ -37,6 +43,7 @@ where
 
     fn resolution(&mut self) -> anyhow::Result<Datetime> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling wall clock (resolution) function.".into());
+        self.ctx().event_handler.accepts(&ClockEvent::WallClock)?;
         let res = self.ctx().wall_clock.resolution();
         Ok(Datetime {
             seconds: res.as_secs(),
@@ -70,17 +77,20 @@ where
 {
     fn now(&mut self) -> anyhow::Result<Instant> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling monotonic clock (now) function.".into());
+        self.ctx().event_handler.accepts(&ClockEvent::MonotonicClock)?;
         Ok(self.ctx().monotonic_clock.now())
     }
 
     fn resolution(&mut self) -> anyhow::Result<Instant> {
         self.ctx().logger.log(LogLevel::DEBUG, "calling monotonic clock (resolution) function.".into());
+        self.ctx().event_handler.accepts(&ClockEvent::MonotonicClock)?;
         Ok(self.ctx().monotonic_clock.resolution())
     }
 
     fn subscribe_instant(&mut self, when: Instant) -> anyhow::Result<Resource<DynPollable>> {
         self.ctx().logger.log(LogLevel::DEBUG, format!("calling monotonic clock (subscribe_instance) function. args: \
             when: {when}"));
+        self.ctx().event_handler.accepts(&ClockEvent::MonotonicClock)?;
         let clock_now = self.ctx().monotonic_clock.now();
         let duration = if when > clock_now {
             Duration::from_nanos(when - clock_now)
@@ -96,6 +106,7 @@ where
     ) -> anyhow::Result<Resource<DynPollable>> {
         self.ctx().logger.log(LogLevel::DEBUG, format!("calling monotonic clock (subscribe_duration) function. args: \
             duration: {duration}"));
+        self.ctx().event_handler.accepts(&ClockEvent::MonotonicClock)?;
         subscribe_to_duration(&mut self.table(), Duration::from_nanos(duration))
     }
 }

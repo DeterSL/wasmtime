@@ -230,7 +230,11 @@ use wasmtime::component::{HasData, Linker};
 
 pub mod bindings;
 mod ctx;
-mod logger;
+
+// HERE
+pub mod logger;
+pub mod event_handler;
+
 pub(crate) mod filesystem;
 mod host;
 mod ip_name_lookup;
@@ -516,12 +520,12 @@ impl<T: 'static> HasData for HasWasi<T> {
     type Data<'a> = WasiImpl<&'a mut T>;
 }
 
-pub fn add_clock_to_linker<'a, T: WasiView + 'static>(
+pub fn add_clock_to_linker<T: WasiView + 'static>(
     linker: &mut Linker<T>
 ) -> anyhow::Result<()>
 {
-    use crate::p2::bindings::{cli, clocks, filesystem, random, sockets};
-    let options = bindings::sync::LinkOptions::default();
+    use crate::p2::bindings::clocks;
+    let _options = bindings::sync::LinkOptions::default();
 
     let l = linker;
     let f: fn(&mut T) -> WasiImpl<&mut T> = |t| WasiImpl(IoImpl(t));
@@ -531,12 +535,12 @@ pub fn add_clock_to_linker<'a, T: WasiView + 'static>(
     Ok(())
 }
 
-pub fn add_random_to_linker<'a, T: WasiView + 'static>(
+pub fn add_random_to_linker<T: WasiView + 'static>(
     linker: &mut Linker<T>
 ) -> anyhow::Result<()>
 {
-    use crate::p2::bindings::{cli, clocks, filesystem, random, sockets};
-    let options = bindings::sync::LinkOptions::default();
+    use crate::p2::bindings::random;
+    let _options = bindings::sync::LinkOptions::default();
 
     let l = linker;
     let f: fn(&mut T) -> WasiImpl<&mut T> = |t| WasiImpl(IoImpl(t));
@@ -548,12 +552,12 @@ pub fn add_random_to_linker<'a, T: WasiView + 'static>(
     Ok(())
 }
 
-pub fn add_filesystem_to_linker<'a, T: WasiView + 'static>(
+pub fn add_filesystem_to_linker<T: WasiView + 'static>(
     linker: &mut Linker<T>
 ) -> anyhow::Result<()>
 {
-    use crate::p2::bindings::{cli, clocks, filesystem, random, sockets};
-    let options = bindings::sync::LinkOptions::default();
+    use crate::p2::bindings::filesystem;
+    let _options = bindings::sync::LinkOptions::default();
 
     let l = linker;
     let f: fn(&mut T) -> WasiImpl<&mut T> = |t| WasiImpl(IoImpl(t));
@@ -564,11 +568,11 @@ pub fn add_filesystem_to_linker<'a, T: WasiView + 'static>(
     Ok(())
 }
 
-pub fn add_sockets_to_linker<'a, T: WasiView + 'static>(
+pub fn add_sockets_to_linker<T: WasiView + 'static>(
     linker: &mut Linker<T>
 ) -> anyhow::Result<()>
 {
-    use crate::p2::bindings::{cli, clocks, filesystem, random, sockets};
+    use crate::p2::bindings::sockets;
     let options = bindings::sync::LinkOptions::default();
 
     let l = linker;
@@ -586,11 +590,11 @@ pub fn add_sockets_to_linker<'a, T: WasiView + 'static>(
     Ok(())
 }
 
-pub fn add_cli_to_linker<'a, T: WasiView + 'static>(
+pub fn add_cli_to_linker<T: WasiView + 'static>(
     linker: &mut Linker<T>
 ) -> anyhow::Result<()>
 {
-    use crate::p2::bindings::{cli, clocks, filesystem, random, sockets};
+    use crate::p2::bindings::cli;
     let options = bindings::sync::LinkOptions::default();
 
     let l = linker;
@@ -610,13 +614,10 @@ pub fn add_cli_to_linker<'a, T: WasiView + 'static>(
     Ok(())
 }
 
-pub fn add_io_to_linker<'a, T: WasiView + 'static>(
+pub fn add_io_to_linker<T: WasiView + 'static>(
     linker: &mut Linker<T>
 ) -> anyhow::Result<()>
 {
-    use crate::p2::bindings::{cli, clocks, filesystem, random, sockets};
-    let options = bindings::sync::LinkOptions::default();
-
     let l = linker;
     let f: fn(&mut T) -> IoImpl<&mut T> = |t| IoImpl(t);
 
