@@ -36,7 +36,7 @@ pub use async_trait::async_trait;
 pub use ::bytes;
 
 use alloc::boxed::Box;
-use wasmtime::component::{HasData, ResourceTable};
+use wasmtime::{component::{HasData, ResourceTable}};
 
 /// A trait which provides access to the [`ResourceTable`] inside the
 /// embedder's `T` of [`Store<T>`][`Store`].

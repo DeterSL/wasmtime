@@ -306,6 +306,11 @@ pub(crate) mod prelude {
     pub use wasmtime_environ::prelude::*;
 }
 
+// HERE
+mod event_handler;
+
+pub use event_handler::{EventHandler, FilterFn}; 
+
 pub(crate) use hashbrown::{hash_map, hash_set};
 
 /// A helper macro to safely map `MaybeUninit<T>` to `MaybeUninit<U>` where `U`

@@ -12,12 +12,13 @@ use crate::{DirPerms, FilePerms, OpenMode, random};
 use anyhow::Result;
 use cap_rand::{Rng, RngCore, SeedableRng};
 use cap_std::ambient_authority;
+use wasmtime::EventHandler;
 use std::path::Path;
 use std::sync::Arc;
 use std::{future::Future, pin::Pin};
 use std::{mem, net::SocketAddr};
 
-use super::{Logger, logger::DummyLogger, event_handler::EventHandler};
+use super::{Logger, logger::DummyLogger, event_handler::EventHandlerImpl};
 
 /// Builder-style structure used to create a [`WasiCtx`].
 ///
@@ -56,7 +57,7 @@ pub struct WasiCtxBuilder {
     allow_blocking_current_thread: bool,
     built: bool,
     logger: Box<dyn Logger + Send>,
-    event_handler: EventHandler
+    event_handler: Box<dyn EventHandler + Send>
 }
 
 impl WasiCtxBuilder {
@@ -107,7 +108,7 @@ impl WasiCtxBuilder {
             allow_blocking_current_thread: false,
             built: false,
             logger: Box::new(DummyLogger{}),
-            event_handler: EventHandler::new()
+            event_handler: Box::new(EventHandlerImpl::new())
         }
     }
 
@@ -459,8 +460,14 @@ impl WasiCtxBuilder {
         self
     }
 
+    // HERE
     pub fn set_logger(&mut self, logger: impl Logger + Send + 'static) -> &mut Self {
         self.logger = Box::new(logger);
+        self
+    }
+
+    pub fn set_event_handler(&mut self, event_handler: impl EventHandler + Send + 'static) -> &mut Self {
+        self.event_handler = Box::new(event_handler);
         self
     }
 
@@ -601,7 +608,7 @@ pub struct WasiCtx {
     pub(crate) allowed_network_uses: AllowedNetworkUses,
     pub(crate) allow_blocking_current_thread: bool,
     pub(crate) logger: Box<dyn Logger + Send>,
-    pub(crate) event_handler: EventHandler
+    pub(crate) event_handler: Box<dyn EventHandler + Send>
 }
 
 impl WasiCtx {
