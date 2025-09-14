@@ -247,6 +247,8 @@ mod udp;
 mod view;
 mod write_stream;
 
+pub use host::{RndEvent, ClockEvent, TCPEvent, UDPEvent, EnvEvent, ExitEvent, FSEvent};
+
 pub use self::ctx::{WasiCtx, WasiCtxBuilder};
 pub use self::logger::{Logger, LogLevel};
 pub use self::filesystem::{FsError, FsResult};
