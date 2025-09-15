@@ -30,7 +30,7 @@ impl EventHandler for EventHandlerImpl {
                 return Ok(true);
             }
         }
-        Ok(false)
+        Err(anyhow::anyhow!("such an event does not exist!"))
     }
 }
 
