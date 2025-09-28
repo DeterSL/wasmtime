@@ -8,6 +8,8 @@ use std::sync::Arc;
 use wasmtime_environ::{FinishedObject, ObjectBuilder};
 
 impl<'a> CodeBuilder<'a> {
+
+    // HERE
     fn compile_cached<T, S>(
         &self,
         build_artifacts: fn(
@@ -17,6 +19,7 @@ impl<'a> CodeBuilder<'a> {
             &S,
         ) -> Result<(MmapVecWrapper, Option<T>)>,
         state: &S,
+        hash: Option<String>
     ) -> Result<(Arc<CodeMemory>, Option<T>)> {
         let wasm = self.get_wasm()?;
         let dwarf_package = self.get_dwarf_package();
@@ -27,48 +30,96 @@ impl<'a> CodeBuilder<'a> {
 
         #[cfg(feature = "cache")]
         {
-            let state = (
-                crate::compile::HashedEngineCompileEnv(self.engine),
-                &wasm,
-                &dwarf_package,
-                // Don't hash this as it's just its own "pure" function pointer.
-                NotHashed(build_artifacts),
-                // Don't hash the FinishedObject state: this contains
-                // things like required runtime alignment, and does
-                // not impact the compilation result itself.
-                NotHashed(state),
-            );
-            let (code, info_and_types) =
-                wasmtime_cache::ModuleCacheEntry::new("wasmtime", self.engine.cache())
-                    .get_data_raw(
-                        &state,
-                        // Cache miss, compute the actual artifacts
-                        |(engine, wasm, dwarf_package, build_artifacts, state)| -> Result<_> {
-                            let (mmap, info) = (build_artifacts.0)(
-                                engine.0,
-                                wasm,
-                                dwarf_package.as_deref(),
-                                state.0,
-                            )?;
-                            let code = publish_mmap(engine.0, mmap.0)?;
-                            Ok((code, info))
-                        },
-                        // Implementation of how to serialize artifacts
-                        |(_engine, _wasm, _, _, _), (code, _info_and_types)| {
-                            Some(code.mmap().to_vec())
-                        },
-                        // Cache hit, deserialize the provided artifacts
-                        |(engine, wasm, _, _, _), serialized_bytes| {
-                            let kind = if wasmparser::Parser::is_component(&wasm) {
-                                wasmtime_environ::ObjectKind::Component
-                            } else {
-                                wasmtime_environ::ObjectKind::Module
-                            };
-                            let code = engine.0.load_code_bytes(&serialized_bytes, kind).ok()?;
-                            Some((code, None))
-                        },
-                    )?;
-            return Ok((code, info_and_types));
+            if let Some(hash_str) = hash {
+                let state = (
+                    crate::compile::HashedEngineCompileEnv(self.engine),
+                    hash_str,
+                    NotHashed(&wasm),
+                    &dwarf_package,
+                    // Don't hash this as it's just its own "pure" function pointer.
+                    NotHashed(build_artifacts),
+                    // Don't hash the FinishedObject state: this contains
+                    // things like required runtime alignment, and does
+                    // not impact the compilation result itself.
+                    NotHashed(state),
+                );
+
+                let (code, info_and_types) =
+                    wasmtime_cache::ModuleCacheEntry::new("wasmtime", self.engine.cache())
+                        .get_data_raw(
+                            &state,
+                            // Cache miss, compute the actual artifacts
+                            |(engine, hash_str, wasm, dwarf_package, build_artifacts, state)| -> Result<_> {
+                                let (mmap, info) = (build_artifacts.0)(
+                                    engine.0,
+                                    wasm.0,
+                                    dwarf_package.as_deref(),
+                                    state.0,
+                                )?;
+                                let code = publish_mmap(engine.0, mmap.0)?;
+                                Ok((code, info))
+                            },
+                            // Implementation of how to serialize artifacts
+                            |(_engine, __, wasm, _, _, _), (code, _info_and_types)| {
+                                Some(code.mmap().to_vec())
+                            },
+                            // Cache hit, deserialize the provided artifacts
+                            |(engine, _, wasm, _, _, _), serialized_bytes| {
+                                let kind = if wasmparser::Parser::is_component(&wasm.0) {
+                                    wasmtime_environ::ObjectKind::Component
+                                } else {
+                                    wasmtime_environ::ObjectKind::Module
+                                };
+                                let code = engine.0.load_code_bytes(&serialized_bytes, kind).ok()?;
+                                Some((code, None))
+                            },
+                        )?;
+                return Ok((code, info_and_types));
+            } else {
+                let state = (
+                    crate::compile::HashedEngineCompileEnv(self.engine),
+                    &wasm,
+                    &dwarf_package,
+                    // Don't hash this as it's just its own "pure" function pointer.
+                    NotHashed(build_artifacts),
+                    // Don't hash the FinishedObject state: this contains
+                    // things like required runtime alignment, and does
+                    // not impact the compilation result itself.
+                    NotHashed(state),
+                );
+
+                let (code, info_and_types) =
+                    wasmtime_cache::ModuleCacheEntry::new("wasmtime", self.engine.cache())
+                        .get_data_raw(
+                            &state,
+                            // Cache miss, compute the actual artifacts
+                            |(engine, wasm, dwarf_package, build_artifacts, state)| -> Result<_> {
+                                let (mmap, info) = (build_artifacts.0)(
+                                    engine.0,
+                                    wasm,
+                                    dwarf_package.as_deref(),
+                                    state.0,
+                                )?;
+                                let code = publish_mmap(engine.0, mmap.0)?;
+                                Ok((code, info))
+                            },
+                            // Implementation of how to serialize artifacts
+                            |(_engine, _wasm, _, _, _), (code, _info_and_types)| {
+                                Some(code.mmap().to_vec())
+                            },
+                            // Cache hit, deserialize the provided artifacts
+                            |(engine, wasm, _, _, _), serialized_bytes| {
+                                let kind = if wasmparser::Parser::is_component(&wasm) {
+                                    wasmtime_environ::ObjectKind::Component
+                                } else {
+                                    wasmtime_environ::ObjectKind::Module
+                                };
+                                let code = engine.0.load_code_bytes(&serialized_bytes, kind).ok()?;
+                                Some((code, None))
+                            },
+                        )?;
+                return Ok((code, info_and_types));
+            }
 
             struct NotHashed<T>(T);
 
@@ -94,7 +145,7 @@ impl<'a> CodeBuilder<'a> {
     pub fn compile_module(&self) -> Result<Module> {
         let custom_alignment = self.custom_alignment();
         let (code, info_and_types) =
-            self.compile_cached(super::build_artifacts, &custom_alignment)?;
+            self.compile_cached(super::build_artifacts, &custom_alignment, None)?;
         Module::from_parts(self.engine, code, info_and_types)
     }
 
@@ -104,7 +155,18 @@ impl<'a> CodeBuilder<'a> {
     pub fn compile_component(&self) -> Result<Component> {
         let custom_alignment = self.custom_alignment();
         let (code, artifacts) =
-            self.compile_cached(super::build_component_artifacts, &custom_alignment)?;
+            self.compile_cached(super::build_component_artifacts, &custom_alignment, None)?;
+        Component::from_parts(self.engine, code, artifacts)
+    }
+
+    // HERE
+    /// Same as [`CodeBuilder::compile_module`] except that it compiles a
+    /// [`Component`] instead of a module with a given hash.
+    #[cfg(feature = "component-model")]
+    pub fn compile_component_with_hash(&self, hash: String) -> Result<Component> {
+        let custom_alignment = self.custom_alignment();
+        let (code, artifacts) =
+            self.compile_cached(super::build_component_artifacts, &custom_alignment, Some(hash))?;
         Component::from_parts(self.engine, code, artifacts)
     }
 
