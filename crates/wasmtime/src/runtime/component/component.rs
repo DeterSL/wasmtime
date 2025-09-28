@@ -175,6 +175,19 @@ impl Component {
             .compile_component()
     }
 
+    // HERE
+    /// Compiles a new WebAssembly component from a wasm file on disk pointed
+    /// to by `file`, and the hash of the file.
+    ///
+    /// This is a convenience function for reading the contents of `file` on
+    /// disk and then calling [`Component::new`].
+    #[cfg(all(feature = "std", any(feature = "cranelift", feature = "winch")))]
+    pub fn from_file_with_hash(engine: &Engine, file: impl AsRef<Path>, hash: String) -> Result<Component> {
+        crate::CodeBuilder::new(engine)
+            .wasm_binary_or_text_file(file.as_ref())?
+            .compile_component_with_hash(hash)
+    }
+
     /// Compiles a new WebAssembly component from the in-memory wasm image
     /// provided.
     ///
