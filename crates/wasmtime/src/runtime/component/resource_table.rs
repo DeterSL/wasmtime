@@ -106,6 +106,24 @@ impl ResourceTable {
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.entries
+            .iter()
+            .filter(|entry| matches!(entry, Entry::Occupied { .. }))
+            .count()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut (dyn Any + Send)> {
+        self.entries.iter_mut().filter_map(|entry| match entry {
+            Entry::Occupied { entry } => Some(&mut *entry.entry),
+            Entry::Free { .. } => None,
+        })
+    }
+
     /// Create an empty table with at least the specified capacity.
     pub fn with_capacity(capacity: usize) -> Self {
         ResourceTable {
