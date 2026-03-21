@@ -106,6 +106,9 @@ impl ResourceTable {
         }
     }
 
+    // HERE
+
+    // Gives the len of entries of resource table
     pub fn len(&self) -> usize {
         self.entries
             .iter()
@@ -113,10 +116,12 @@ impl ResourceTable {
             .count()
     }
 
+    // Check if the resource table is empty
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    // Gives an iterator for resource table
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut (dyn Any + Send)> {
         self.entries.iter_mut().filter_map(|entry| match entry {
             Entry::Occupied { entry } => Some(&mut *entry.entry),
